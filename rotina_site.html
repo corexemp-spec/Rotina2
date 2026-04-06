@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rotina Semanal - Painel Editável</title>
+  <style>
+    :root {
+      --bg: #081120;
+      --panel: rgba(12, 23, 41, 0.82);
+      --panel-2: rgba(17, 32, 57, 0.88);
+      --line: rgba(255, 255, 255, 0.10);
+      --text: #eaf2ff;
+      --muted: #9fb2d1;
+      --primary: #6ea8ff;
+      --primary-2: #7b61ff;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #fb7185;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(110,168,255,0.22), transparent 30%),
+        radial-gradient(circle at top right, rgba(123,97,255,0.18), transparent 30%),
+        linear-gradient(160deg, #07111f 0%, #0b1730 55%, #081120 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      width: min(1400px, calc(100% - 32px));
+      margin: 24px auto;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .sidebar {
+      padding: 20px;
+      position: sticky;
+      top: 20px;
+      height: fit-content;
+    }
+
+    .brand {
+      padding: 6px 0 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: #9dc1ff;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 28px;
+      line-height: 1.05;
+      margin: 0 0 10px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .day-list {
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 20px;
+    }
+
+    .day-btn {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .day-btn:hover { transform: translateY(-1px); border-color: rgba(110,168,255,.45); }
+    .day-btn.active {
+      background: linear-gradient(135deg, rgba(110,168,255,0.22), rgba(123,97,255,0.20));
+      border-color: rgba(110,168,255,.55);
+    }
+    .day-btn strong { display:block; font-size: 15px; }
+    .day-btn span { color: var(--muted); font-size: 12px; }
+    .badge {
+      min-width: 44px;
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .side-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    button, .file-label {
+      appearance: none;
+      border: none;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: white;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .2s ease;
+      font-size: 14px;
+    }
+    button:hover, .file-label:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .ghost {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .danger { background: linear-gradient(135deg, #ef4444, #e11d48); }
+    input[type="file"] { display:none; }
+
+    .content {
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero {
+      padding: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -90px auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(110,168,255,.24), transparent 65%);
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+    .topbar p { margin: 0; color: var(--muted); }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #dce8ff;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .metric {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .metric label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .metric strong {
+      font-size: 26px;
+      line-height: 1;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .metric span { color: var(--muted); font-size: 13px; }
+
+    .section {
+      padding: 22px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .section-title { margin: 0; font-size: 20px; }
+    .toolbar { display:flex; gap:10px; flex-wrap: wrap; }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 900px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(12,23,41,0.98);
+      color: #caddff;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: 14px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: middle;
+    }
+    tbody tr:hover { background: rgba(255,255,255,0.035); }
+    td.actions {
+      width: 132px;
+      white-space: nowrap;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(110,168,255,.55);
+      box-shadow: 0 0 0 3px rgba(110,168,255,.12);
+    }
+    textarea {
+      min-height: 42px;
+      resize: vertical;
+    }
+    .duration-cell {
+      min-width: 84px;
+      font-weight: 700;
+      color: #bdeccf;
+    }
+    .row-btn {
+      width: auto;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-right: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .row-btn.delete { color: #ffd6de; border-color: rgba(251,113,133,.3); }
+
+    .notes-grid {
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+    }
+
+    .info-box {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .info-box h3 { margin: 0 0 10px; font-size: 16px; }
+    .info-box p, .info-box li { color: var(--muted); line-height: 1.6; }
+    .info-box ul { margin: 0; padding-left: 20px; }
+
+    .week-list {
+      display: grid;
+      gap: 10px;
+    }
+    .week-item {
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .week-item strong { font-size: 14px; }
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .bar > i {
+      display:block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+    }
+    .muted { color: var(--muted); }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 2px 0 18px;
+    }
+
+    @media (max-width: 1100px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .summary-grid, .notes-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 780px) {
+      .summary-grid, .notes-grid { grid-template-columns: 1fr; }
+      .shell { width: min(100% - 20px, 1400px); }
+      .hero, .section, .sidebar { padding: 18px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar card">
+      <div class="brand">
+        <div class="eyebrow">Site editável</div>
+        <h1>Rotina semanal</h1>
+        <p class="subtitle">Versão moderna da sua planilha, com edição diária, cálculo automático de horas e salvamento no navegador.</p>
+      </div>
+
+      <div class="day-list" id="dayList"></div>
+
+      <div class="side-actions">
+        <button id="saveBtn">Salvar agora</button>
+        <button class="ghost" id="exportBtn">Exportar backup (.json)</button>
+        <label class="file-label ghost" for="importFile">Importar backup</label>
+        <input id="importFile" type="file" accept="application/json" />
+        <button class="danger" id="resetBtn">Restaurar original</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero card">
+        <div class="topbar">
+          <div>
+            <div class="eyebrow">Painel do dia</div>
+            <h2 id="currentDayTitle">Segunda</h2>
+            <p>Edite horários, atividades, local e observações. A duração e os resumos são recalculados automaticamente.</p>
+          </div>
+          <div class="chips">
+            <div class="chip" id="weeklyHoursChip">0h na semana</div>
+            <div class="chip" id="weeklyTasksChip">0 atividades</div>
+            <div class="chip">Salvo localmente no navegador</div>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="metric">
+            <label>Horas do dia</label>
+            <strong id="hoursToday">0h</strong>
+            <span>Total de tempo registrado.</span>
+          </div>
+          <div class="metric">
+            <label>Atividades</label>
+            <strong id="tasksToday">0</strong>
+            <span>Itens cadastrados neste dia.</span>
+          </div>
+          <div class="metric">
+            <label>Primeiro horário</label>
+            <strong id="firstTime">--:--</strong>
+            <span>Início mais cedo da rotina.</span>
+          </div>
+          <div class="metric">
+            <label>Último horário</label>
+            <strong id="lastTime">--:--</strong>
+            <span>Fim mais tarde da rotina.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section card">
+        <div class="section-header">
+          <h3 class="section-title">Agenda editável</h3>
+          <div class="toolbar">
+            <button class="ghost" id="sortBtn">Ordenar por horário</button>
+            <button id="addRowBtn">Adicionar atividade</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 110px;">Início</th>
+                <th style="width: 110px;">Fim</th>
+                <th>Atividade</th>
+                <th style="width: 180px;">Local</th>
+                <th style="width: 110px;">Duração</th>
+                <th style="min-width: 240px;">Observações</th>
+                <th style="width: 140px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section card">
+        <div class="section-header">
+          <h3 class="section-title">Resumo semanal</h3>
+          <span class="muted">Baseado na sua planilha original e nas edições feitas aqui.</span>
+        </div>
+
+        <div class="notes-grid">
+          <div class="info-box">
+            <h3>Como usar</h3>
+            <ul>
+              <li>Escolha um dia no menu lateral.</li>
+              <li>Edite as linhas diretamente na tabela.</li>
+              <li>Use <strong>Adicionar atividade</strong> para incluir novos blocos.</li>
+              <li>O botão <strong>Salvar agora</strong> grava tudo no navegador.</li>
+              <li>Use <strong>Exportar backup</strong> para levar seus dados para outro computador.</li>
+            </ul>
+          </div>
+
+          <div class="info-box">
+            <h3>Horas por dia</h3>
+            <div class="week-list" id="weekList"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer-note">Arquivo independente: basta abrir este HTML no navegador.</div>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'rotina-semanal-site-v1';
+    const ORIGINAL_DATA = {
+      "Segunda": [
+        {"inicio":"05:00","fim":"05:30","atividade":"Acordar / início do dia","local":"Casa","observacoes":""},
+        {"inicio":"05:30","fim":"05:55","atividade":"Café da manhã","local":"Casa","observacoes":""},
+        {"inicio":"05:55","fim":"09:50","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"09:50","fim":"10:10","atividade":"Lanche","local":"Escola","observacoes":""},
+        {"inicio":"10:10","fim":"12:40","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"12:40","fim":"12:50","atividade":"Chegada em casa","local":"Casa","observacoes":""},
+        {"inicio":"12:50","fim":"13:20","atividade":"Almoço","local":"Casa","observacoes":""},
+        {"inicio":"13:30","fim":"17:30","atividade":"Trabalho home office","local":"Casa","observacoes":""},
+        {"inicio":"19:00","fim":"20:30","atividade":"Academia","local":"Academia","observacoes":"Treino de 1h30."},
+        {"inicio":"20:40","fim":"21:00","atividade":"Jantar","local":"Casa","observacoes":""}
+      ],
+      "Terça": [
+        {"inicio":"05:00","fim":"05:30","atividade":"Acordar / início do dia","local":"Casa","observacoes":""},
+        {"inicio":"05:30","fim":"05:55","atividade":"Café da manhã","local":"Casa","observacoes":""},
+        {"inicio":"05:55","fim":"09:50","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"09:50","fim":"10:10","atividade":"Lanche","local":"Escola","observacoes":""},
+        {"inicio":"10:10","fim":"12:40","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"12:40","fim":"12:50","atividade":"Chegada em casa","local":"Casa","observacoes":""},
+        {"inicio":"12:50","fim":"13:20","atividade":"Almoço","local":"Casa","observacoes":""},
+        {"inicio":"14:00","fim":"15:30","atividade":"Musculação","local":"Academia","observacoes":"Treino de 1h30."},
+        {"inicio":"15:30","fim":"16:00","atividade":"Descanso","local":"Academia","observacoes":"Intervalo de 30 min."},
+        {"inicio":"16:00","fim":"16:40","atividade":"Natação","local":"Academia","observacoes":""},
+        {"inicio":"16:40","fim":"17:00","atividade":"Retorno para casa","local":"Casa","observacoes":""},
+        {"inicio":"18:00","fim":"19:00","atividade":"Trabalho home office","local":"Casa","observacoes":""},
+        {"inicio":"19:00","fim":"19:30","atividade":"Jantar","local":"Casa","observacoes":""},
+        {"inicio":"19:30","fim":"21:30","atividade":"Trabalho home office","local":"Casa","observacoes":""}
+      ],
+      "Quarta": [
+        {"inicio":"05:00","fim":"05:30","atividade":"Acordar / início do dia","local":"Casa","observacoes":""},
+        {"inicio":"05:30","fim":"05:55","atividade":"Café da manhã","local":"Casa","observacoes":""},
+        {"inicio":"05:55","fim":"09:50","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"09:50","fim":"10:10","atividade":"Lanche","local":"Escola","observacoes":""},
+        {"inicio":"10:10","fim":"12:40","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"12:40","fim":"12:50","atividade":"Chegada em casa","local":"Casa","observacoes":""},
+        {"inicio":"12:50","fim":"13:20","atividade":"Almoço","local":"Casa","observacoes":""},
+        {"inicio":"13:30","fim":"17:30","atividade":"Trabalho home office","local":"Casa","observacoes":""},
+        {"inicio":"19:00","fim":"20:30","atividade":"Academia","local":"Academia","observacoes":"Treino de 1h30."},
+        {"inicio":"20:40","fim":"21:00","atividade":"Jantar","local":"Casa","observacoes":""}
+      ],
+      "Quinta": [
+        {"inicio":"05:00","fim":"05:30","atividade":"Acordar / início do dia","local":"Casa","observacoes":""},
+        {"inicio":"05:30","fim":"05:55","atividade":"Café da manhã","local":"Casa","observacoes":""},
+        {"inicio":"05:55","fim":"09:50","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"09:50","fim":"10:10","atividade":"Lanche","local":"Escola","observacoes":""},
+        {"inicio":"10:10","fim":"12:40","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"12:40","fim":"12:50","atividade":"Chegada em casa","local":"Casa","observacoes":""},
+        {"inicio":"12:50","fim":"13:20","atividade":"Almoço","local":"Casa","observacoes":""},
+        {"inicio":"14:00","fim":"15:30","atividade":"Musculação","local":"Academia","observacoes":"Treino de 1h30."},
+        {"inicio":"15:30","fim":"16:00","atividade":"Descanso","local":"Academia","observacoes":"Intervalo de 30 min."},
+        {"inicio":"16:00","fim":"16:40","atividade":"Natação","local":"Academia","observacoes":""},
+        {"inicio":"16:40","fim":"17:00","atividade":"Retorno para casa","local":"Casa","observacoes":""},
+        {"inicio":"18:00","fim":"19:00","atividade":"Trabalho home office","local":"Casa","observacoes":""},
+        {"inicio":"19:00","fim":"19:30","atividade":"Jantar","local":"Casa","observacoes":""},
+        {"inicio":"19:30","fim":"21:30","atividade":"Trabalho home office","local":"Casa","observacoes":""}
+      ],
+      "Sexta": [
+        {"inicio":"05:00","fim":"05:30","atividade":"Acordar / início do dia","local":"Casa","observacoes":""},
+        {"inicio":"05:30","fim":"05:55","atividade":"Café da manhã","local":"Casa","observacoes":""},
+        {"inicio":"05:55","fim":"09:50","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"09:50","fim":"10:10","atividade":"Lanche","local":"Escola","observacoes":""},
+        {"inicio":"10:10","fim":"12:40","atividade":"Escola","local":"Escola","observacoes":""},
+        {"inicio":"12:40","fim":"12:50","atividade":"Chegada em casa","local":"Casa","observacoes":""},
+        {"inicio":"12:50","fim":"13:20","atividade":"Almoço","local":"Casa","observacoes":""},
+        {"inicio":"13:30","fim":"17:30","atividade":"Trabalho home office","local":"Casa","observacoes":""},
+        {"inicio":"19:00","fim":"20:30","atividade":"Academia","local":"Academia","observacoes":"Treino de 1h30."},
+        {"inicio":"20:40","fim":"21:00","atividade":"Jantar","local":"Casa","observacoes":""}
+      ]
+    };
+
+    let data = loadData();
+    let currentDay = inferCurrentDay();
+
+    const dayList = document.getElementById('dayList');
+    const scheduleBody = document.getElementById('scheduleBody');
+    const currentDayTitle = document.getElementById('currentDayTitle');
+    const hoursToday = document.getElementById('hoursToday');
+    const tasksToday = document.getElementById('tasksToday');
+    const firstTime = document.getElementById('firstTime');
+    const lastTime = document.getElementById('lastTime');
+    const weekList = document.getElementById('weekList');
+    const weeklyHoursChip = document.getElementById('weeklyHoursChip');
+    const weeklyTasksChip = document.getElementById('weeklyTasksChip');
+
+    function deepClone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function inferCurrentDay() {
+      const map = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      const today = map[new Date().getDay()];
+      return ORIGINAL_DATA[today] ? today : 'Segunda';
+    }
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : deepClone(ORIGINAL_DATA);
+      } catch {
+        return deepClone(ORIGINAL_DATA);
+      }
+    }
+
+    function saveData(showFeedback = true) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (showFeedback) {
+        const btn = document.getElementById('saveBtn');
+        const prev = btn.textContent;
+        btn.textContent = 'Salvo ✓';
+        setTimeout(() => btn.textContent = prev, 1200);
+      }
+      renderAll();
+    }
+
+    function toMinutes(time) {
+      if (!time || !time.includes(':')) return null;
+      const [h, m] = time.split(':').map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+      return h * 60 + m;
+    }
+
+    function formatHours(hours) {
+      return `${hours.toFixed(1).replace('.', ',')}h`;
+    }
+
+    function calcDurationHours(item) {
+      const start = toMinutes(item.inicio);
+      const end = toMinutes(item.fim);
+      if (start === null || end === null || end < start) return 0;
+      return (end - start) / 60;
+    }
+
+    function sortDay(day) {
+      data[day].sort((a, b) => (toMinutes(a.inicio) ?? 9999) - (toMinutes(b.inicio) ?? 9999));
+    }
+
+    function getDaySummary(day) {
+      const list = data[day] || [];
+      const durations = list.map(calcDurationHours);
+      const hours = durations.reduce((acc, value) => acc + value, 0);
+      const validStarts = list.map(item => toMinutes(item.inicio)).filter(v => v !== null).sort((a,b)=>a-b);
+      const validEnds = list.map(item => toMinutes(item.fim)).filter(v => v !== null).sort((a,b)=>a-b);
+      return {
+        hours,
+        tasks: list.length,
+        first: validStarts.length ? minutesToTime(validStarts[0]) : '--:--',
+        last: validEnds.length ? minutesToTime(validEnds[validEnds.length - 1]) : '--:--'
+      };
+    }
+
+    function minutesToTime(minutes) {
+      const h = String(Math.floor(minutes / 60)).padStart(2, '0');
+      const m = String(minutes % 60).padStart(2, '0');
+      return `${h}:${m}`;
+    }
+
+    function weekTotals() {
+      const days = Object.keys(data);
+      const totalHours = days.reduce((acc, day) => acc + getDaySummary(day).hours, 0);
+      const totalTasks = days.reduce((acc, day) => acc + (data[day]?.length || 0), 0);
+      return { totalHours, totalTasks };
+    }
+
+    function renderDayList() {
+      dayList.innerHTML = '';
+      Object.keys(data).forEach(day => {
+        const summary = getDaySummary(day);
+        const btn = document.createElement('button');
+        btn.className = `day-btn ${day === currentDay ? 'active' : ''}`;
+        btn.innerHTML = `
+          <div>
+            <strong>${day}</strong>
+            <span>${summary.tasks} atividades</span>
+          </div>
+          <div class="badge">${formatHours(summary.hours)}</div>
+        `;
+        btn.addEventListener('click', () => {
+          currentDay = day;
+          renderAll();
+        });
+        dayList.appendChild(btn);
+      });
+    }
+
+    function renderTable() {
+      scheduleBody.innerHTML = '';
+      const list = data[currentDay] || [];
+
+      list.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        const duration = calcDurationHours(item);
+        tr.innerHTML = `
+          <td><input type="time" value="${item.inicio || ''}" data-field="inicio" data-index="${index}" /></td>
+          <td><input type="time" value="${item.fim || ''}" data-field="fim" data-index="${index}" /></td>
+          <td><input type="text" value="${escapeHtml(item.atividade || '')}" data-field="atividade" data-index="${index}" placeholder="Ex.: Estudo" /></td>
+          <td><input type="text" value="${escapeHtml(item.local || '')}" data-field="local" data-index="${index}" placeholder="Ex.: Casa" /></td>
+          <td class="duration-cell">${duration > 0 ? formatHours(duration) : '—'}</td>
+          <td><textarea data-field="observacoes" data-index="${index}" placeholder="Detalhes extras">${escapeHtml(item.observacoes || '')}</textarea></td>
+          <td class="actions">
+            <button class="row-btn" data-action="duplicate" data-index="${index}">Duplicar</button>
+            <button class="row-btn delete" data-action="delete" data-index="${index}">Excluir</button>
+          </td>
+        `;
+        scheduleBody.appendChild(tr);
+      });
+
+      scheduleBody.querySelectorAll('input, textarea').forEach(el => {
+        el.addEventListener('input', e => {
+          const index = Number(e.target.dataset.index);
+          const field = e.target.dataset.field;
+          data[currentDay][index][field] = e.target.value;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          const row = e.target.closest('tr');
+          if (row) {
+            const durationCell = row.querySelector('.duration-cell');
+            const duration = calcDurationHours(data[currentDay][index]);
+            durationCell.textContent = duration > 0 ? formatHours(duration) : '—';
+          }
+          renderHero();
+          renderDayList();
+          renderWeekList();
+        });
+      });
+
+      scheduleBody.querySelectorAll('[data-action="duplicate"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const index = Number(btn.dataset.index);
+          const copy = deepClone(data[currentDay][index]);
+          data[currentDay].splice(index + 1, 0, copy);
+          saveData(false);
+        });
+      });
+
+      scheduleBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const index = Number(btn.dataset.index);
+          data[currentDay].splice(index, 1);
+          saveData(false);
+        });
+      });
+    }
+
+    function renderHero() {
+      const summary = getDaySummary(currentDay);
+      currentDayTitle.textContent = currentDay;
+      hoursToday.textContent = formatHours(summary.hours);
+      tasksToday.textContent = summary.tasks;
+      firstTime.textContent = summary.first;
+      lastTime.textContent = summary.last;
+
+      const totals = weekTotals();
+      weeklyHoursChip.textContent = `${formatHours(totals.totalHours)} na semana`;
+      weeklyTasksChip.textContent = `${totals.totalTasks} atividades`;
+    }
+
+    function renderWeekList() {
+      weekList.innerHTML = '';
+      const maxHours = Math.max(...Object.keys(data).map(day => getDaySummary(day).hours), 1);
+      Object.keys(data).forEach(day => {
+        const summary = getDaySummary(day);
+        const item = document.createElement('div');
+        item.className = 'week-item';
+        const width = Math.max((summary.hours / maxHours) * 100, 4);
+        item.innerHTML = `
+          <div style="flex:1; min-width: 0;">
+            <strong>${day}</strong>
+            <div class="bar"><i style="width:${width}%"></i></div>
+          </div>
+          <div><strong>${formatHours(summary.hours)}</strong></div>
+        `;
+        weekList.appendChild(item);
+      });
+    }
+
+    function renderAll() {
+      renderDayList();
+      renderHero();
+      renderTable();
+      renderWeekList();
+    }
+
+    function addRow() {
+      data[currentDay].push({
+        inicio: '',
+        fim: '',
+        atividade: '',
+        local: '',
+        observacoes: ''
+      });
+      saveData(false);
+    }
+
+    function exportBackup() {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'rotina-semanal-backup.json';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function importBackup(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          data = imported;
+          saveData(false);
+        } catch {
+          alert('Arquivo inválido. Use um backup .json exportado por esta página.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetOriginal() {
+      if (!confirm('Deseja restaurar a rotina original da planilha? Isso apaga as edições salvas neste navegador.')) return;
+      data = deepClone(ORIGINAL_DATA);
+      saveData(false);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', () => saveData(true));
+    document.getElementById('addRowBtn').addEventListener('click', addRow);
+    document.getElementById('exportBtn').addEventListener('click', exportBackup);
+    document.getElementById('importFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) importBackup(file);
+      e.target.value = '';
+    });
+    document.getElementById('resetBtn').addEventListener('click', resetOriginal);
+    document.getElementById('sortBtn').addEventListener('click', () => {
+      sortDay(currentDay);
+      saveData(false);
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
